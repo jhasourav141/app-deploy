@@ -1,0 +1,79 @@
+
+apiVersion: v1
+kind: Service
+metadata:
+  name: wordpress
+  labels:
+    app: wordpress
+spec:
+  ports:
+    - port: 8080
+      targetPort: 8080 
+  selector:
+    app: wordpress
+  type: NodePort
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: wordpress-claim
+  labels:
+    app: wordpress
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 1Gi
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: wordpress
+  labels:
+    app: wordpress
+spec:
+  selector:
+    matchLabels:
+      app: wordpress
+      
+  strategy:
+    type: Recreate
+  template:
+    metadata:
+      labels:
+        app: wordpress
+        
+    spec:
+      containers:
+      - image: wordpress:4.8-apache
+        name: wordpress
+        
+        ports:
+        - containerPort: 8080
+          name: wordpress
+        volumeMounts:
+        - name: wordpress-persistent-storage
+          mountPath: /var/www
+      volumes:
+      - name: wordpress-persistent-storage
+        persistentVolumeClaim:
+          claimName: wp-pv-claim
+---
+apiVersion: v1
+kind: Pod
+metadata:
+  name: wordpress
+spec:
+  containers:
+  - name: wordpress
+    image: wordpress:4.8-apache
+    command: ["/bin/bash", "-c", "while true; do echo Hello Wordpress; sleep 5 ; done"]
+    resource :
+    requests:
+        memory: "1Gi"
+        cpu: "0.5"
+      limits:
+        memory: "1Gi"     
+        cpu: "1"                                              
+           
